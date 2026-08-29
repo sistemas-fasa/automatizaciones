@@ -13,6 +13,12 @@ node_modules/
 test-results/
 *_OLD.py
 *.bak*
+apps/dashboard/ReportGenerator_OLD.py
+apps/dashboard/VentasVendedor.py.bak_20260721
+apps/informes_diarios/cumpleanios.py.bak_20260721
+apps/informes_diarios/facturas_no_procesadas.py.bak_20260717_084854
+apps/proyeccion_compras/calculator.py.bak-20260717-principal
+jobs/monitor_puerto_3050.sh.bak*
 *.log
 logs/
 locks/
