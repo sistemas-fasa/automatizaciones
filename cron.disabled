@@ -1,0 +1,3 @@
+# Business schedules intentionally disabled during migration.
+# Add one reviewed entry only after the corresponding source cron is stopped,
+# the final backup is verified, and the manual/shadow test has passed.
