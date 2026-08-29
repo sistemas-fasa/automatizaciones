@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -u
+
+NAME="monitor_puerto_3050"
+HOST="suevos.ddns.net"
+PORT="3050"
+BASE="/home/ferreteria/automatizaciones"
+LOG_DIR="$BASE/logs/linux/$NAME"
+LOCK_FILE="$BASE/locks/$NAME.lock"
+
+mkdir -p "$LOG_DIR" "$(dirname "$LOCK_FILE")"
+LOG_FILE="$LOG_DIR/${NAME}-$(date +%Y%m%d-%H%M%S).log"
+
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+  echo "$(date --iso-8601=seconds) SKIPPED already_running lock=$LOCK_FILE" >> "$LOG_FILE"
+  exit 0
+fi
+
+echo "$(date --iso-8601=seconds) START host=$HOST port=$PORT" >> "$LOG_FILE"
+if timeout 15 bash -c "</dev/tcp/$HOST/$PORT" >/dev/null 2>&1; then
+  echo "$(date --iso-8601=seconds) OK port_open host=$HOST port=$PORT" >> "$LOG_FILE"
+  exit_code=0
+else
+  exit_code=$?
+  error_line="$(date --iso-8601=seconds) ERROR port_closed_or_timeout host=$HOST port=$PORT exit_code=$exit_code"
+  echo "$error_line" >> "$LOG_FILE"
+  echo "$error_line log=$LOG_FILE" >&2
+fi
+
+find "$LOG_DIR" -type f -name "${NAME}-*.log" -mtime +30 -delete 2>/dev/null || true
+echo "$(date --iso-8601=seconds) END exit_code=$exit_code" >> "$LOG_FILE"
+exit "$exit_code"

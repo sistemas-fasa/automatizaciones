@@ -1,0 +1,35 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+!.env.template
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Python and JavaScript generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+test-results/
+
+# Runtime logs and generated reports
+*.log
+apps/dashboard/dashboard_*.html
+apps/dashboard/inflacion_*.html
+apps/dashboard/history.json
+apps/dashboard/dashboard_output/
+apps/exports/
+logs/
+locks/
+venv/
+
+# Screenshots and local editor state
+*.png
+*.jpg
+*.jpeg
+.vscode/
+.idea/

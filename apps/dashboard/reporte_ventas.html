@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Ventas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <style>
+        /* Reset y estilos generales */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        /* Contenedor del gráfico */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            min-height: 300px;
+            margin: auto;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Tabla responsiva */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background-color: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Responsive en pantallas pequeñas */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.2em;
+            }
+            th, td {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Reporte de Ventas por Vendedor</h1>
+
+    <div class="chart-container">
+        <canvas id="graficoVentas"></canvas>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Vendedor</th>
+                <th>Total Neto</th>
+                <th>Total Artículos Vendidos</th>
+            </tr>
+        </thead>
+        <tbody id="tablaDatos">
+        </tbody>
+    </table>
+
+    <script>
+        const data = {"BERNARDY CESAR ROBERTO        ": {"total_neto": 29351141.063999992, "total_cantidad": 2671}, "FLORES CRISTIAN JAVIER": {"total_neto": 37297242.479000054, "total_cantidad": 7082}, "LOCH VICTOR ROLANDO": {"total_neto": 68822090.187, "total_cantidad": 5207}, "BOURSCHEID MATIAS ARIEL": {"total_neto": 72291621.11100002, "total_cantidad": 5710}, "WERLE MARCELO                 ": {"total_neto": 46204101.28499999, "total_cantidad": 4239}, "STOFFEL GUIDO": {"total_neto": 40841168.95800003, "total_cantidad": 6858}, "LOPEZ NESTOR DANIEL ": {"total_neto": 21732106.993000016, "total_cantidad": 4227}, "BOCZAR VICTOR ARIEL           ": {"total_neto": 27852331.867999997, "total_cantidad": 5374}, "MATTJE JOSE GUILLERMO": {"total_neto": 26377659.938, "total_cantidad": 6218}, "HANDORF CRISTIAN GUSTAVO": {"total_neto": 14039452.635999987, "total_cantidad": 3453}, "ALVAREZ ALDO FABIAN": {"total_neto": 36596258.70600004, "total_cantidad": 3203}, "ZABALA MAURICIO JAVIER        ": {"total_neto": 2164341.676000001, "total_cantidad": 585}, "MOREL JORGE CARLOS": {"total_neto": 29310687.485999957, "total_cantidad": 4519}, "STEFFEN GUSTAVO LUIS MIGUEL": {"total_neto": 9429078.89, "total_cantidad": 55}, "GROTH SUSANA ANDREA": {"total_neto": 68385.981, "total_cantidad": 16}, "VIER EGON JOEL": {"total_neto": 18307020.848999985, "total_cantidad": 3245}, "JACHOW LUIS CARLOS            ": {"total_neto": 91801.06, "total_cantidad": 8}};
+
+        const labels = Object.keys(data);
+        const netos = labels.map(v => data[v].total_neto);
+
+        // Gráfico de barras
+        const ctx = document.getElementById('graficoVentas').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Neto Vendido',
+                    data: netos,
+                    backgroundColor: '#4CAF50'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => '$' + value.toLocaleString()
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: context => `$${context.raw.toLocaleString()}`
+                        }
+                    }
+                }
+            }
+        });
+
+        // Rellenar tabla
+        const tbody = document.getElementById('tablaDatos');
+        labels.forEach(vendedor => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${vendedor}</td>
+                <td>$${data[vendedor].total_neto.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>${data[vendedor].total_cantidad}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    </script>
+</body>
+</html>

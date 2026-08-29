@@ -1,0 +1,156 @@
+import mysql.connector
+from mysql.connector import Error
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+SMTP_SERVER='mail.ferreteriaavenida.com.ar'
+SMTP_PORT=587
+SMTP_USER='info@ferreteriaavenida.com.ar'
+SMTP_PASSWORD='4eU@@@S8rJ'
+TO_EMAILS=['sistemas@ferreteriaavenida.com.ar', 'compras@ferreteriaavenida.com.ar']
+# TO_EMAILS=oscar@ferreteriaavenida.com.ar
+FROM_EMAIL='info@ferreteriaavenida.com.ar'
+
+# Configuración de la base de datos
+db_config = {
+    'host': '192.168.0.150',
+    'database': 'fasa',
+    'user': 'root',
+    'password': 'fasca'
+}
+
+# Configuración del correo
+smtp_server = SMTP_SERVER  # Cambiar según tu proveedor
+smtp_port = SMTP_PORT
+sender_email = SMTP_USER
+sender_password = SMTP_PASSWORD
+receiver_email = TO_EMAILS
+subject = "Reporte de Facturas no procesadas desde el 01/06/2025"
+
+def ejecutar_consulta():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        query = """
+        SELECT 
+            movi.idmovi id,
+            stock_ve.codigo Codigo,
+            stock_ve.CLASE Clase,
+            stock_ve.comp Comprobante,
+            CONCAT(stock_ve.ZONA, stock_ve.cliente) AS Cliente,
+            movi.NOMBRE Nombre,
+            movi.Fecha Fecha,
+            stock_ve.clave Articulo,
+            stock_ve.unidad Unidad,
+            stock_ve.cantidad Cantidad
+        FROM movi 
+        INNER JOIN stock_ve 
+            ON CONCAT(SUBSTR(movi.CODIGO, 1,1), movi.clase, movi.comp) = CONCAT(stock_ve.CODIGO, stock_ve.CLASE, stock_ve.COMP)
+        WHERE movi.fecha >= 20250601
+          AND reparte = 'A' 
+          AND stock_ve.Procesado = 0
+          AND movi.pagoant = 0
+        union
+        SELECT d.IDREMITO id, d.tipo codigo, '' clase,
+		  		d.COMP comprobante, d.cliente,
+			   r.NOMBRE, r.fecha,
+			   d.ARTICULO articulo, 
+			   d.UNIDAD, d.cantidad
+		  FROM detaremi d
+		  		INNER JOIN remitos r ON d.tipo = r.TIPO AND d.comp = r.comp
+		  		WHERE d.procesado = 0 
+				  	AND d.tipo = 'X' 
+					  AND d.fecha >= 20250601 
+					  AND d.reparto = 'N' 
+					  AND SUBSTR(d.comp,1,4) IN ('0011', '0013')
+        """
+        cursor.execute(query)
+        result = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        return columns, result
+    except Error as e:
+        print(f"Error al conectar o ejecutar la consulta: {e}")
+        return [], []
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+def generar_html_tabla(datos, columnas):
+    html = """
+    <html>
+    <head>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-family: Arial, sans-serif;
+            }
+            th, td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Reporte de Facturas no Procesadas</h2>
+        <table>
+            <thead>
+                <tr>
+    """
+
+    html += "".join([f"<th>{col}</th>" for col in columnas])
+    html += """
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for fila in datos:
+        html += "<tr>"
+        html += "".join([f"<td>{celda}</td>" for celda in fila])
+        html += "</tr>"
+
+    html += """
+            </tbody>
+        </table>
+    </body>
+    </html>
+    """
+    return html
+
+def enviar_correo(html_content):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = sender_email
+    msg["To"] = ", ".join(receiver_email)
+    msg["Bcc"] = 'oscar@ferreteriaavenida.com.ar'
+
+    # Adjuntar contenido HTML
+    part = MIMEText(html_content, "html")
+    msg.attach(part)
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # server.starttls()  # Iniciar conexión segura
+            server.login(sender_email, sender_password)
+            # Incluir BCC en la lista de destinatarios
+            all_recipients = receiver_email + ['oscar@ferreteriaavenida.com.ar']
+            server.sendmail(sender_email, all_recipients, msg.as_string())
+        print("Correo enviado exitosamente.")
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
+# Flujo principal
+if __name__ == "__main__":
+    columnas, datos = ejecutar_consulta()
+    if datos:
+        html_tabla = generar_html_tabla(datos, columnas)
+        enviar_correo(html_tabla)
+    else:
+        print("No se encontraron resultados para enviar.")

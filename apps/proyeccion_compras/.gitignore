@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+outputs/
+*.xlsx
+node_modules/
+nul
+.worktrees/
