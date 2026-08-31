@@ -3,16 +3,19 @@ set -u
 
 BASE="${AUTOMATIZACIONES_ROOT:-/opt/automatizaciones}"
 PYTHON="${AUTOMATIZACIONES_PYTHON:-python3}"
-if [ -f /run/secrets/exports.env ]; then
-  set -a
-  . /run/secrets/exports.env
-  set +a
-fi
-if [ -f /run/secrets/legacy-dashboard.env ]; then
-  set -a
-  . /run/secrets/legacy-dashboard.env
-  set +a
-fi
+load_env_file() {
+  local file="$1" line
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in
+      ''|\#*) continue ;;
+      *=*) export "$line" ;;
+    esac
+  done < "$file"
+}
+load_env_file /run/secrets/exports.env
+load_env_file /run/secrets/legacy-dashboard.env
 # reporte_remitos usa nombres de correo históricos; el secreto nuevo usa EMAIL_SMTP_*.
 export EMAIL_HOST="${EMAIL_HOST:-${EMAIL_SMTP_SERVER:-}}"
 export EMAIL_PORT="${EMAIL_PORT:-${EMAIL_SMTP_PORT:-587}}"
