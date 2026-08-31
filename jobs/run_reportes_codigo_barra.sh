@@ -3,6 +3,23 @@ set -u
 
 BASE="${AUTOMATIZACIONES_ROOT:-/opt/automatizaciones}"
 PYTHON="${AUTOMATIZACIONES_PYTHON:-python3}"
+if [ -f /run/secrets/exports.env ]; then
+  set -a
+  . /run/secrets/exports.env
+  set +a
+fi
+if [ -f /run/secrets/legacy-dashboard.env ]; then
+  set -a
+  . /run/secrets/legacy-dashboard.env
+  set +a
+fi
+# reporte_remitos usa nombres de correo históricos; el secreto nuevo usa EMAIL_SMTP_*.
+export EMAIL_HOST="${EMAIL_HOST:-${EMAIL_SMTP_SERVER:-}}"
+export EMAIL_PORT="${EMAIL_PORT:-${EMAIL_SMTP_PORT:-587}}"
+export EMAIL_USER="${EMAIL_USER:-${EMAIL_FROM:-${SMTP_USER:-}}}"
+export EMAIL_PASSWORD="${EMAIL_PASSWORD:-${EMAIL_SMTP_PASSWORD:-${SMTP_PASSWORD:-}}}"
+export EMAIL_TO="${EMAIL_TO:-${EMAIL_TO_EMAILS:-${TO_EMAILS_DAILY:-}}}"
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
 export EXPORTS_OUTPUT_DIR="${EXPORTS_OUTPUT_DIR:-/data/exports-work}"
 export EXPORTS_WEB_DIR="${EXPORTS_WEB_DIR:-/data/mis-dashboards}"
 LOG_DIR="${REPORTES_CODIGO_BARRA_LOG_DIR:-/data/logs/linux/reportes_codigo_barra}"
