@@ -48,6 +48,7 @@ cd "$APP_DIR" || {
   exit 1
 }
 export PYTHONPATH="$APP_DIR${PYTHONPATH:+:$PYTHONPATH}"
+export UTILS_ENV_FILE="$ENV_FILE"
 
 timeout "$TIMEOUT" "$@" >> "$LOG_FILE" 2>&1
 exit_code=$?
