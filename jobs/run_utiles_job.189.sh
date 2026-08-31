@@ -5,6 +5,7 @@ NAME="${1:?job name required}"
 ENV_FILE="${2:?env file required}"
 shift 2
 BASE="${AUTOMATIZACIONES_ROOT:-/data}"
+APP_DIR="/var/www/html/utiles"
 LOG_DIR="$BASE/logs/linux/$NAME"
 LOCK_FILE="$BASE/locks/$NAME.lock"
 TIMEOUT="${JOB_TIMEOUT:-50m}"
@@ -41,6 +42,12 @@ else
   echo "$(date --iso-8601=seconds) ERROR missing_env_file=$ENV_FILE" >> "$LOG_FILE"
   exit 1
 fi
+
+cd "$APP_DIR" || {
+  echo "$(date --iso-8601=seconds) ERROR cannot_cd app_dir=$APP_DIR" >> "$LOG_FILE"
+  exit 1
+}
+export PYTHONPATH="$APP_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
 timeout "$TIMEOUT" "$@" >> "$LOG_FILE" 2>&1
 exit_code=$?
