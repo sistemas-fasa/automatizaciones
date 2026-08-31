@@ -1,3 +1,2 @@
-# Business schedules intentionally disabled during migration.
-# Add one reviewed entry only after the corresponding source cron is stopped,
-# the final backup is verified, and the manual/shadow test has passed.
+# FASA_AUTOMATIZACIONES monitor_puerto_3050 cutover to fasa_189 on 2026-08-31
+0 * * * * root AUTOMATIZACIONES_ROOT=/data /opt/automatizaciones/jobs/monitor_puerto_3050.sh >> /data/logs/linux/monitor_puerto_3050/cron.log 2>&1
