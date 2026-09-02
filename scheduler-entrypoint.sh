@@ -20,3 +20,10 @@ jobs=(
 for job in "${jobs[@]}"; do
   mkdir -p "$log_root/$job"
 done
+
+if [[ "${1:-}" == "cron" ]]; then
+  "$@"
+  exec tail -f /dev/null
+fi
+
+exec "$@"
