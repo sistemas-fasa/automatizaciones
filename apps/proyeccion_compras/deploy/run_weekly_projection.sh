@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="${PROYECCION_APP_DIR:-/opt/automatizaciones/apps/proyeccion_compras}"
-ENV_FILE="${PROYECCION_ENV_FILE:-/run/secrets/proyeccion-compras.env}"
-PYTHON="${PROYECCION_PYTHON:-python3}"
-PUBLIC_DIR="${PROYECCION_PUBLIC_DIR:-/var/www/html/informes/proyeccion-compras}"
+APP_DIR="/home/fasa/automation-src-incoming-20260829/apps/proyeccion_compras"
+ENV_FILE="$APP_DIR/.env"
+PYTHON="/usr/bin/python3"
+PUBLIC_DIR="${PUBLIC_DIR_OVERRIDE:-/srv/fasa-data/data/informes/proyeccion-compras}"
 
 cd "$APP_DIR"
 set -a

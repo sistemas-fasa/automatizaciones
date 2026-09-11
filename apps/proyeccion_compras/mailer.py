@@ -46,11 +46,20 @@ def send_report_email(
     )
     msg.attach(attachment)
 
-    with smtplib.SMTP(cfg.smtp_server, cfg.smtp_port) as server:
-        server.starttls()
-        if cfg.smtp_user:
-            server.login(cfg.smtp_user, cfg.smtp_password)
-        server.send_message(msg)
+    if int(cfg.smtp_port) == 465:
+        with smtplib.SMTP_SSL(cfg.smtp_server, int(cfg.smtp_port), timeout=30) as server:
+            if cfg.smtp_user:
+                server.login(cfg.smtp_user, cfg.smtp_password)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP(cfg.smtp_server, int(cfg.smtp_port), timeout=30) as server:
+            try:
+                server.starttls()
+            except Exception as e:
+                logger.warning("STARTTLS no soportado: %s", e)
+            if cfg.smtp_user:
+                server.login(cfg.smtp_user, cfg.smtp_password)
+            server.send_message(msg)
 
     logger.info("Email enviado a %s", ", ".join(recipients))
 
@@ -127,8 +136,14 @@ def send_email(resumenes: list[ResumenProveedor], excel_path: str | Path | None 
             msg.attach(part)
 
     try:
-        server = smtplib.SMTP(cfg.smtp_server, cfg.smtp_port)
-        server.starttls()
+        if int(cfg.smtp_port) == 465:
+            server = smtplib.SMTP_SSL(cfg.smtp_server, int(cfg.smtp_port), timeout=30)
+        else:
+            server = smtplib.SMTP(cfg.smtp_server, int(cfg.smtp_port), timeout=30)
+            try:
+                server.starttls()
+            except Exception as e:
+                logger.warning("STARTTLS no soportado: %s", e)
         if cfg.smtp_user:
             server.login(cfg.smtp_user, cfg.smtp_password)
         server.send_message(msg)
