@@ -75,10 +75,8 @@ def main():
         # 3. Copiar al servidor si existe la ruta de informes
         copied = False
         try:
-            if sys.platform.startswith('linux'):
-                server_path = "/var/www/html/informes"
-            else:
-                server_path = r"\\192.168.0.195\web\informes"
+            # /var/www/html/informes es mount a /srv/fasa-data/data/informes (195 dado de baja).
+            server_path = "/var/www/html/informes"
 
             if os.path.exists(server_path):
                 try:
