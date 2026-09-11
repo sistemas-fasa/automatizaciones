@@ -582,10 +582,7 @@ class SalesDashboard:
 
                 # Copiar al servidor
                 try:
-                    if sys.platform.startswith('linux'):
-                        server_path = "/var/www/html/informes"
-                    else:
-                        server_path = r"\\192.168.0.195\web\informes"
+                    server_path = "/srv/fasa-data/data/informes"
                     if os.path.exists(server_path):
                         dest_file = os.path.join(server_path, inflacion_filename)
                         shutil.copy2(inflacion_filename, dest_file)
@@ -614,10 +611,7 @@ class SalesDashboard:
         
         # Copiar al servidor de informes
         try:
-            if sys.platform.startswith('linux'):
-                server_path = "/var/www/html/informes"
-            else:
-                server_path = r"\\192.168.0.195\web\informes"
+            server_path = "/srv/fasa-data/data/informes"
             if os.path.exists(server_path):
                 dest_file = os.path.join(server_path, filename)
                 shutil.copy2(filename, dest_file)
