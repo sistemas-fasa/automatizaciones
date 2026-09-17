@@ -1178,3 +1178,41 @@ class DatabaseManager:
             cursor.close()
             connection.close()
 
+    def get_rubros_venta(self, fecha_desde, fecha_hasta):
+        """Obtiene montos de venta agrupados por rubro (primer carácter de CLAVE en facturas)."""
+        connection = self.connect()
+        if not connection:
+            return []
+        cursor = connection.cursor(dictionary=True)
+        try:
+            query = """
+                SELECT SUBSTRING(f.CLAVE, 1, 1) AS grupo,
+                       COALESCE(MAX(r.NOMBRE), SUBSTRING(f.CLAVE, 1, 1)) AS nombre,
+                       SUM(f.NetoRenglon) AS total
+                FROM facturas f
+                LEFT JOIN rubros r ON r.CODIGO = SUBSTRING(f.CLAVE, 1, 1)
+                WHERE DATE(f.FECHA) BETWEEN %s AND %s
+                  AND f.empresa_id = %s
+                GROUP BY SUBSTRING(f.CLAVE, 1, 1)
+                ORDER BY total DESC
+            """
+            cursor.execute(query, (fecha_desde, fecha_hasta, self.empresa_id))
+            rows = cursor.fetchall()
+            result = []
+            for row in rows:
+                grupo = row['grupo'] if row['grupo'] is not None else 'Sin grupo'
+                nombre = (row['nombre'] or str(grupo)).strip()
+                total = float(row['total']) if row['total'] is not None else 0.0
+                result.append({
+                    'range': f"{grupo} - {nombre}",
+                    'count': 0,
+                    'total': total
+                })
+            return result
+        except Exception as e:
+            logging.error(f"Error obteniendo rubros de venta: {e}")
+            return []
+        finally:
+            cursor.close()
+            connection.close()
+

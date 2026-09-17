@@ -79,7 +79,7 @@ class SalesDashboard:
             # Destinatarios para informes DIARIOS
             'to_emails_daily': [e.strip() for e in os.getenv('TO_EMAILS_DAILY', os.getenv('TO_EMAILS', '')).split(',') if e.strip()] or ['default@example.com'],
             # Destinatarios para informes MENSUALES
-            'to_emails_monthly': [e.strip() for e in os.getenv('TO_EMAILS_MONTHLY', os.getenv('TO_EMAILS', '')).split(',') if e.strip()] or ['default@example.com']
+            'to_emails_monthly': [e.strip() for e in os.getenv('TO_EMAILS_MONTHLY', os.getenv('TO_EMAILS', '')).split(',') if e.strip()] or ['default@example.com'],
         }
         self.fecha_consulta = datetime.now().strftime('%Y-%m-%d')
         # Determine empresa_id: prefer explicit parameter, otherwise read from .env (default 1)
@@ -286,6 +286,29 @@ class SalesDashboard:
             logging.info("Detalle ventas vendedor enviado a %s archivo=%s", recipients, excel_path)
         return sent
 
+    def _get_informe_path(self):
+        """Determine the correct path for the informes directory."""
+        # Allow override via environment variable
+        env_path = os.getenv('INFORMES_PATH')
+        if env_path:
+            return env_path
+        # Check if we are inside a container
+        if os.path.exists('/.dockerenv') or os.path.exists('/proc/self/cgroup'):
+            # Inside container, use the mount point
+            return '/var/www/html/informes'
+        else:
+            # Outside container, use the host source path
+            return '/srv/fasa-data/data/informes'
+
+    def _get_informe_path(self):
+        """Determine the correct path for the informes directory."""
+        # Allow override via environment variable
+        env_path = os.getenv('INFORMES_PATH')
+        if env_path:
+            return env_path
+        # Use the host path where the volume is mounted
+        return '/srv/fasa-data/data/informes'
+
     def run(self):
         db_manager = DatabaseManager(self.db_config, empresa_id=self.empresa_id)
         # Añadir parámetros de rango de presupuestos a paramsist si no existen
@@ -376,6 +399,25 @@ class SalesDashboard:
                 # (DataProcessor normalmente llena por_pago/por_reparto con 'total_dia' y 'total_mes')
             except Exception:
                 pass
+        # Obtener rubros de venta (solo acumulado mensual)
+        if acumulado_mes:
+            try:
+                stats['rubros_venta'] = db_manager.get_rubros_venta(
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta
+                )
+                logging.info(
+                    "rubros_venta filas=%s rango=%s..%s",
+                    len(stats['rubros_venta'] or []),
+                    fecha_desde,
+                    fecha_hasta,
+                )
+            except Exception as e:
+                logging.error(f"Error obteniendo rubros de venta: {e}")
+                stats['rubros_venta'] = []
+        else:
+            stats['rubros_venta'] = []
+
         # Obtener remitos no facturados y agregar al diccionario de stats
         try:
             remitos_sin_facturar = db_manager.get_remitos_sin_facturar()
@@ -634,24 +676,24 @@ class SalesDashboard:
         
         # Copiar al servidor de informes
         try:
-            # /var/www/html/informes es mount a /srv/fasa-data/data/informes.
-            server_path = "/var/www/html/informes"
-            if os.path.exists(server_path):
-                dest_file = os.path.join(server_path, filename)
+            informe_path = self._get_informe_path()
+            if os.path.exists(informe_path):
+                dest_file = os.path.join(informe_path, filename)
                 shutil.copy2(filename, dest_file)
                 print(f"Archivo copiado al servidor: {dest_file}")
                 logging.info(f"Dashboard copiado a {dest_file}")
             else:
-                print(f"No se puede acceder al servidor: {server_path}")
-                logging.warning(f"No se pudo acceder a {server_path}")
+                print(f"No se puede acceder al servidor de informes: {informe_path}")
+                logging.warning(f"No se pudo acceder a {informe_path}")
         except Exception as e:
             print(f"Error al copiar al servidor: {e}")
             logging.error(f"Error copiando al servidor: {e}")
 
-        # Determinar tipo de reporte y enviar email con destinatarios correspondientes
         report_type = 'monthly' if getattr(self, 'acumulado_mes', False) else 'daily'
-        # Para incluir el nombre de la empresa en el correo usar el campo company_title definido arriba
-        EmailSender(self.smtp_config).send_email(html_content, self.fecha_consulta, filename, report_type, company_name=comp_info['title'])
+        # Determinar tipo de reporte y enviar email con destinatarios correspondientes
+        skip_dashboard_email = os.getenv('SKIP_DASHBOARD_EMAIL', '').lower() in ('1', 'true', 'yes', 'si')
+        if not skip_dashboard_email:
+            EmailSender(self.smtp_config).send_email(html_content, self.fecha_consulta, filename, report_type, company_name=comp_info['title'])
 
         try:
             skip_vendedor_detail = os.getenv('SKIP_VENDEDOR_DETAIL_EMAIL', '').lower() in ('1', 'true', 'yes', 'si')

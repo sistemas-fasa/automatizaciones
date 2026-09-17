@@ -306,12 +306,16 @@ class ReportGenerator:
             }
             '''
             presupuestos_rango_block = '''
-            <!-- Gráfico de Rango de Presupuestos -->
-            <div class="bg-white p-4 rounded-xl shadow-md mb-8">
-                <h3 class="text-lg font-semibold text-center mb-4">📊 Rango de Presupuestos (Tipo Z)</h3>
-                <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-3 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
-                <div class="flex-1 min-h-[320px]">
-                    <canvas id="presupuestosRangoChart" style="width: 100%; height: 100%;"></canvas>
+            <!-- Gráfico de Rango de Presupuestos (en grid) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-4 rounded-xl shadow-md overflow-hidden h-72">
+                    <h3 class="text-lg font-semibold text-center mb-2">📊 Rango de Presupuestos (Tipo Z)</h3>
+                    <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-2 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
+                    <canvas id="presupuestosRangoChart" class="w-full h-full"></canvas>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md overflow-hidden h-72">
+                    <h3 class="text-lg font-semibold text-center mb-2">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
+                    <canvas id="rubrosChart" class="w-full h-full"></canvas>
                 </div>
             </div>
             '''
@@ -803,6 +807,14 @@ class ReportGenerator:
             
             {presupuestos_rango_block}
 
+            <!-- Gráfico de Rubros -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-4 rounded-xl shadow-md h-72">
+                    <h3 class="text-lg font-semibold text-center mb-2">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
+                    <canvas id="rubrosChart" class="w-full h-[200px]"></canvas>
+                </div>
+            </div>
+
             <!-- Tabla de Condición de Pago -->
             {tabla_pago}
 
@@ -839,6 +851,7 @@ class ReportGenerator:
             {vendedor_nc_data_const}
             {vendedor_history_const}
 const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
+            const rubrosData = {json.dumps(stats.get('rubros_venta', []))};
             const acumuladoMesFlag = {json.dumps(bool(stats.get('acumulado_mes')))};
             const presupuestosRangoData = {json.dumps(stats.get('presupuestos_rango', []))};
                  const cajaDiaData = {json.dumps(caja_dia_data)};
@@ -1083,6 +1096,41 @@ const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
             {bonificaciones_chart_script}
 
             {presupuestos_rango_chart_script}
+
+            // Gráfico: Rubros (Pie)
+            if (rubrosData && rubrosData.length) {{
+                const rubrosLabels = rubrosData.map(i => i.range);
+                const rubrosValues = rubrosData.map(i => i.total);
+                new Chart(document.getElementById('rubrosChart'), {{
+                    type: 'pie',
+                    data: {{
+                        labels: rubrosLabels,
+                        datasets: [{{
+                            data: rubrosValues,
+                            backgroundColor: rubrosLabels.map(() => getRandomColor()),
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        plugins: {{
+                            legend: {{ position: 'bottom' }},
+                            tooltip: {{
+                                callbacks: {{
+                                    label: function(context) {{
+                                        const label = context.label || '';
+                                        const value = Number(context.raw) || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        return label + ': $' + value.toLocaleString('es-AR') + ' (' + percentage + '%)';
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                }});
+            }}
 
             // Gráfico: Ventas por Caja - Día (Pie) - Solo en reporte diario
             if (!acumuladoMesFlag) {{
