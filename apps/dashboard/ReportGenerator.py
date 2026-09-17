@@ -306,16 +306,16 @@ class ReportGenerator:
             }
             '''
             presupuestos_rango_block = '''
-            <!-- Gráfico de Rango de Presupuestos (en grid) -->
+            <!-- Gráficos Presupuestos + Rubros (en grid) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-4 rounded-xl shadow-md overflow-hidden h-72">
-                    <h3 class="text-lg font-semibold text-center mb-2">📊 Rango de Presupuestos (Tipo Z)</h3>
-                    <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-2 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
-                    <canvas id="presupuestosRangoChart" class="w-full h-full"></canvas>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-center mb-4">📊 Rango de Presupuestos (Tipo Z)</h3>
+                    <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-3 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
+                    <canvas id="presupuestosRangoChart" class="w-full h-72"></canvas>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-md overflow-hidden h-72">
-                    <h3 class="text-lg font-semibold text-center mb-2">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
-                    <canvas id="rubrosChart" class="w-full h-full"></canvas>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-center mb-4">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
+                    <canvas id="rubrosChart" class="w-full h-72"></canvas>
                 </div>
             </div>
             '''
@@ -806,14 +806,6 @@ class ReportGenerator:
             {proveedor_block}
             
             {presupuestos_rango_block}
-
-            <!-- Gráfico de Rubros -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-4 rounded-xl shadow-md h-72">
-                    <h3 class="text-lg font-semibold text-center mb-2">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
-                    <canvas id="rubrosChart" class="w-full h-[200px]"></canvas>
-                </div>
-            </div>
 
             <!-- Tabla de Condición de Pago -->
             {tabla_pago}
