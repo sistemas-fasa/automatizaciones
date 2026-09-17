@@ -286,8 +286,10 @@ class SalesDashboard:
             logging.info("Detalle ventas vendedor enviado a %s archivo=%s", recipients, excel_path)
         return sent
 
-    def run(self):
+def run(self):
         db_manager = DatabaseManager(self.db_config, empresa_id=self.empresa_id)
+        # Añadir parámetros de rango de presupuestos a paramsist si no existen
+        db_manager.add_presupuesto_rango_params()
         # Por defecto genera el dashboard del día. Si se desea el acumulado del mes,
         # pasar la bandera `--monthly` al ejecutar el script (o usar el parámetro desde código).
         acumulado_mes = getattr(self, 'acumulado_mes', False)
@@ -381,6 +383,25 @@ class SalesDashboard:
         except Exception as e:
             logging.error(f"Error obteniendo remitos sin facturar: {e}")
             stats['remitos_sin_facturar'] = 0.0
+        
+        # Obtener rangos de presupuestos (solo para acumulado mensual)
+        if acumulado_mes:
+            try:
+                stats['presupuestos_rango'] = db_manager.get_presupuestos_rango(
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta
+                )
+                logging.info(
+                    "presupuestos_rango filas=%s rango=%s..%s",
+                    len(stats['presupuestos_rango'] or []),
+                    fecha_desde,
+                    fecha_hasta,
+                )
+            except Exception as e:
+                logging.error(f"Error obteniendo rangos de presupuestos: {e}")
+                stats['presupuestos_rango'] = []
+        else:
+            stats['presupuestos_rango'] = []
         
         # Fetch aging summary from DB and attach to stats
         try:

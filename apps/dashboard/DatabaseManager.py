@@ -858,6 +858,144 @@ class DatabaseManager:
             cursor.close()
             connection.close()
 
+    def _format_money(self, amount):
+        """Format amount as string with thousand separator as . and decimal separator as , without currency symbol."""
+        try:
+            formatted = f"{amount:,.2f}"
+            formatted = formatted.replace(',', 'X').replace('.', ',').replace('X', '.')
+            if formatted.endswith(',00'):
+                formatted = formatted[:-3]
+            return formatted
+        except Exception:
+            return str(amount)
+
+    def get_presupuesto_rango_params(self):
+        """Obtiene los parámetros de rango de presupuestos de la tabla paramsist."""
+        connection = self.connect()
+        if not connection:
+            return {'salto': 2500000, 'max': 20000000}
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                "SELECT parametro, valor FROM paramsist WHERE parametro IN (%s, %s)",
+                ('RANGO_PRESUPUESTO_SALTO', 'RANGO_PRESUPUESTO_MAX')
+            )
+            rows = cursor.fetchall()
+            params = {}
+            for row in rows:
+                try:
+                    params[row[0]] = float(row[1]) if row[1] is not None else 0.0
+                except Exception:
+                    params[row[0]] = 0.0
+            salto = params.get('RANGO_PRESUPUESTO_SALTO', 2500000)
+            max_val = params.get('RANGO_PRESUPUESTO_MAX', 20000000)
+            return {'salto': salto, 'max': max_val}
+        except Exception as e:
+            logging.error(f"Error obteniendo parametros de rango de presupuestos: {e}")
+            return {'salto': 2500000, 'max': 20000000}
+        finally:
+            cursor.close()
+            connection.close()
+
+    def get_presupuestos_rango(self, fecha_desde, fecha_hasta):
+        """Obtiene la distribución de presupuestos (tipo='Z') por rangos definidos en paramsist.
+        Retorna una lista de dicts con keys: range, count, total.
+        Rangos: 0-2.5M, 2.5M-5M, ..., 17.5M-20M, >20M
+        """
+        params = self.get_presupuesto_rango_params()
+        salto = params['salto']
+        max_val = params['max']
+        connection = self.connect()
+        if not connection:
+            return []
+        cursor = connection.cursor(dictionary=True)
+        try:
+            query = """
+                SELECT r.total AS neto
+                FROM remitos r
+                WHERE r.tipo = 'Z'
+                  AND DATE(r.FECHA) BETWEEN %s AND %s
+                  AND r.empresa_id = %s
+            """
+            cursor.execute(query, (fecha_desde, fecha_hasta, self.empresa_id))
+            rows = cursor.fetchall()
+            buckets = {}
+            current = 0
+            while current < max_val:
+                lower = current
+                upper = current + salto
+                label = f"{self._format_money(lower)}-{self._format_money(upper)}"
+                buckets[label] = {'count': 0, 'total': 0.0}
+                current = upper
+            overflow_label = f"> {self._format_money(max_val)}"
+            buckets[overflow_label] = {'count': 0, 'total': 0.0}
+            bucket_order = list(buckets.keys())
+            for row in rows:
+                neto = float(row['neto']) if row['neto'] is not None else 0.0
+                if neto > max_val:
+                    bucket_label = overflow_label
+                else:
+                    index = int(neto // salto)
+                    lower = index * salto
+                    upper = lower + salto
+                    bucket_label = f"{self._format_money(lower)}-{self._format_money(upper)}"
+                if bucket_label in buckets:
+                    buckets[bucket_label]['count'] += 1
+                    buckets[bucket_label]['total'] += neto
+                else:
+                    buckets[overflow_label]['count'] += 1
+                    buckets[overflow_label]['total'] += neto
+            result = []
+            for label in bucket_order:
+                vals = buckets[label]
+                if vals['count'] > 0:
+                    result.append({
+                        'range': label,
+                        'count': vals['count'],
+                        'total': vals['total']
+                    })
+            return result
+        except Exception as e:
+            logging.error(f"Error obteniendo rangos de presupuestos: {e}")
+            return []
+        finally:
+            cursor.close()
+            connection.close()
+
+    def add_presupuesto_rango_params(self):
+        """Añade los parámetros de rango de presupuestos a la tabla paramsist si no existen."""
+        connection = self.connect()
+        if not connection:
+            return False
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) FROM paramsist WHERE parametro = 'RANGO_PRESUPUESTO_SALTO'"
+            )
+            count = cursor.fetchone()[0]
+            if count == 0:
+                cursor.execute(
+                    "INSERT INTO paramsist (parametro, valor) VALUES (%s, %s)",
+                    ('RANGO_PRESUPUESTO_SALTO', 2500000)
+                )
+            cursor.execute(
+                "SELECT COUNT(*) FROM paramsist WHERE parametro = 'RANGO_PRESUPUESTO_MAX'"
+            )
+            count = cursor.fetchone()[0]
+            if count == 0:
+                cursor.execute(
+                    "INSERT INTO paramsist (parametro, valor) VALUES (%s, %s)",
+                    ('RANGO_PRESUPUESTO_MAX', 20000000)
+                )
+            connection.commit()
+            return True
+        except Exception as e:
+            logging.error(f"Error añadiendo parametros de rango: {e}")
+            return False
+        finally:
+            cursor.close()
+            connection.close()
+
     def get_inflacion_interanual(self, fecha):
         """
         Calcula la inflación interanual comparando:

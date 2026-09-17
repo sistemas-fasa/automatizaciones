@@ -258,6 +258,23 @@ class ReportGenerator:
             </div>
             '''
 
+        # Bloque de gráfico de presupuestos por rango (solo en acumulado mensual)
+        presupuestos_rango_block = ''
+        presupuestos_rango_data_const = ''
+        presupuestos_rango_chart_script = ''
+        if stats.get('acumulado_mes') and stats.get('presupuestos_rango'):
+            # Construir el bloque HTML con el canvas
+            presupuestos_rango_block = '''
+            <!-- Gráfico de Rango de Presupuestos -->
+            <div class="bg-white p-4 rounded-xl shadow-md mb-8">
+                <h3 class="text-lg font-semibold text-center mb-4">📊 Rango de Presupuestos (Tipo Z)</h3>
+                <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-3 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
+                <div class="flex-1 min-h-[320px]">
+                    <canvas id="presupuestosRangoChart" style="width: 100%; height: 100%;"></canvas>
+                </div>
+            </div>
+            '''
+
         # Bloque de gráfico por vendedor (ventas + NC, solo acumulado mensual)
         vendedor_nc_card = '''
                 <div class="bg-white p-4 rounded-xl shadow-md flex flex-col">
@@ -742,6 +759,8 @@ class ReportGenerator:
             {vendedor_nc_block}
 
             {proveedor_block}
+            
+            {presupuestos_rango_block}
 
             <!-- Tabla de Condición de Pago -->
             {tabla_pago}
@@ -778,10 +797,11 @@ class ReportGenerator:
             const comprobantesProveedor = {json.dumps(stats.get('comprobantes_proveedor', []))};
             {vendedor_nc_data_const}
             {vendedor_history_const}
-            const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
+const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
             const acumuladoMesFlag = {json.dumps(bool(stats.get('acumulado_mes')))};
-                const cajaDiaData = {json.dumps(caja_dia_data)};
-                const cajaMesData = {json.dumps(caja_mes_data)};
+            const presupuestosRangoData = {json.dumps(stats.get('presupuestos_rango', []))};
+                 const cajaDiaData = {json.dumps(caja_dia_data)};
+                 const cajaMesData = {json.dumps(caja_mes_data)};
             
             // Colores para gráficos de histórico (definido temprano para disponibilidad)
             const HISTORICO_COLORS = ['#2563EB','#DC2626','#16A34A','#D97706','#7C3AED','#EC4899','#0891B2','#CA8A04','#6B7280','#BE123C'];
@@ -1020,6 +1040,8 @@ class ReportGenerator:
             {vendedor_nc_chart_script}
 
             {bonificaciones_chart_script}
+
+            {presupuestos_rango_chart_script}
 
             // Gráfico: Ventas por Caja - Día (Pie) - Solo en reporte diario
             if (!acumuladoMesFlag) {{
