@@ -286,7 +286,7 @@ class SalesDashboard:
             logging.info("Detalle ventas vendedor enviado a %s archivo=%s", recipients, excel_path)
         return sent
 
-def run(self):
+    def run(self):
         db_manager = DatabaseManager(self.db_config, empresa_id=self.empresa_id)
         # Añadir parámetros de rango de presupuestos a paramsist si no existen
         db_manager.add_presupuesto_rango_params()

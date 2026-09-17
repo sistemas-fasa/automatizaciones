@@ -263,7 +263,48 @@ class ReportGenerator:
         presupuestos_rango_data_const = ''
         presupuestos_rango_chart_script = ''
         if stats.get('acumulado_mes') and stats.get('presupuestos_rango'):
-            # Construir el bloque HTML con el canvas
+            presupuestos_rango_data_const = f"const presupuestosRangoData = {json.dumps(stats.get('presupuestos_rango', []))};"
+            presupuestos_rango_chart_script = '''
+            // Gráfico: Presupuestos por rango (pie)
+            if (presupuestosRangoData && presupuestosRangoData.length) {
+                const labels = presupuestosRangoData.map(i => i.range);
+                const values = presupuestosRangoData.map(i => i.total);
+                new Chart(document.getElementById('presupuestosRangoChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: labels.map(() => getRandomColor()),
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = Number(context.raw) || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        return label + ': $' + value.toLocaleString('es-AR') + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                const emptyEl = document.getElementById('presupuestosRangoEmpty');
+                const canvasEl = document.getElementById('presupuestosRangoChart');
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                if (canvasEl) canvasEl.style.display = 'none';
+            }
+            '''
             presupuestos_rango_block = '''
             <!-- Gráfico de Rango de Presupuestos -->
             <div class="bg-white p-4 rounded-xl shadow-md mb-8">

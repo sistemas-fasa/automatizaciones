@@ -877,7 +877,7 @@ class DatabaseManager:
         cursor = connection.cursor()
         try:
             cursor.execute(
-                "SELECT parametro, valor FROM paramsist WHERE parametro IN (%s, %s)",
+                "SELECT Parametro, Valor FROM paramsist WHERE Parametro IN (%s, %s)",
                 ('RANGO_PRESUPUESTO_SALTO', 'RANGO_PRESUPUESTO_MAX')
             )
             rows = cursor.fetchall()
@@ -970,21 +970,21 @@ class DatabaseManager:
         cursor = connection.cursor()
         try:
             cursor.execute(
-                "SELECT COUNT(*) FROM paramsist WHERE parametro = 'RANGO_PRESUPUESTO_SALTO'"
+                "SELECT COUNT(*) FROM paramsist WHERE Parametro = 'RANGO_PRESUPUESTO_SALTO'"
             )
             count = cursor.fetchone()[0]
             if count == 0:
                 cursor.execute(
-                    "INSERT INTO paramsist (parametro, valor) VALUES (%s, %s)",
+                    "INSERT INTO paramsist (Parametro, Valor) VALUES (%s, %s)",
                     ('RANGO_PRESUPUESTO_SALTO', 2500000)
                 )
             cursor.execute(
-                "SELECT COUNT(*) FROM paramsist WHERE parametro = 'RANGO_PRESUPUESTO_MAX'"
+                "SELECT COUNT(*) FROM paramsist WHERE Parametro = 'RANGO_PRESUPUESTO_MAX'"
             )
             count = cursor.fetchone()[0]
             if count == 0:
                 cursor.execute(
-                    "INSERT INTO paramsist (parametro, valor) VALUES (%s, %s)",
+                    "INSERT INTO paramsist (Parametro, Valor) VALUES (%s, %s)",
                     ('RANGO_PRESUPUESTO_MAX', 20000000)
                 )
             connection.commit()
