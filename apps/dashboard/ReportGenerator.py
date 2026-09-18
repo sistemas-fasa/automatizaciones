@@ -258,6 +258,68 @@ class ReportGenerator:
             </div>
             '''
 
+        # Bloque de gráfico de presupuestos por rango (solo en acumulado mensual)
+        presupuestos_rango_block = ''
+        presupuestos_rango_data_const = ''
+        presupuestos_rango_chart_script = ''
+        if stats.get('acumulado_mes') and stats.get('presupuestos_rango'):
+            presupuestos_rango_data_const = f"const presupuestosRangoData = {json.dumps(stats.get('presupuestos_rango', []))};"
+            presupuestos_rango_chart_script = '''
+            // Gráfico: Presupuestos por rango (pie)
+            if (presupuestosRangoData && presupuestosRangoData.length) {
+                const labels = presupuestosRangoData.map(i => i.range);
+                const values = presupuestosRangoData.map(i => i.total);
+                new Chart(document.getElementById('presupuestosRangoChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: labels.map(() => getRandomColor()),
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = Number(context.raw) || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        return label + ': $' + value.toLocaleString('es-AR') + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                const emptyEl = document.getElementById('presupuestosRangoEmpty');
+                const canvasEl = document.getElementById('presupuestosRangoChart');
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                if (canvasEl) canvasEl.style.display = 'none';
+            }
+            '''
+            presupuestos_rango_block = '''
+            <!-- Gráficos Presupuestos + Rubros (en grid) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-center mb-4">📊 Rango de Presupuestos (Tipo Z)</h3>
+                    <p id="presupuestosRangoEmpty" class="text-sm text-gray-500 text-center mb-3 hidden">Sin datos de presupuestos para el rango seleccionado.</p>
+                    <canvas id="presupuestosRangoChart" class="w-full h-72"></canvas>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-center mb-4">📊 Venta por Rubro (Primer carácter CLAVE)</h3>
+                    <canvas id="rubrosChart" class="w-full h-72"></canvas>
+                </div>
+            </div>
+            '''
+
         # Bloque de gráfico por vendedor (ventas + NC, solo acumulado mensual)
         vendedor_nc_card = '''
                 <div class="bg-white p-4 rounded-xl shadow-md flex flex-col">
@@ -742,6 +804,8 @@ class ReportGenerator:
             {vendedor_nc_block}
 
             {proveedor_block}
+            
+            {presupuestos_rango_block}
 
             <!-- Tabla de Condición de Pago -->
             {tabla_pago}
@@ -778,10 +842,12 @@ class ReportGenerator:
             const comprobantesProveedor = {json.dumps(stats.get('comprobantes_proveedor', []))};
             {vendedor_nc_data_const}
             {vendedor_history_const}
-            const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
+const bonificacionesData = {json.dumps(stats.get('bonificaciones', []))};
+            const rubrosData = {json.dumps(stats.get('rubros_venta', []))};
             const acumuladoMesFlag = {json.dumps(bool(stats.get('acumulado_mes')))};
-                const cajaDiaData = {json.dumps(caja_dia_data)};
-                const cajaMesData = {json.dumps(caja_mes_data)};
+            const presupuestosRangoData = {json.dumps(stats.get('presupuestos_rango', []))};
+                 const cajaDiaData = {json.dumps(caja_dia_data)};
+                 const cajaMesData = {json.dumps(caja_mes_data)};
             
             // Colores para gráficos de histórico (definido temprano para disponibilidad)
             const HISTORICO_COLORS = ['#2563EB','#DC2626','#16A34A','#D97706','#7C3AED','#EC4899','#0891B2','#CA8A04','#6B7280','#BE123C'];
@@ -1020,6 +1086,43 @@ class ReportGenerator:
             {vendedor_nc_chart_script}
 
             {bonificaciones_chart_script}
+
+            {presupuestos_rango_chart_script}
+
+            // Gráfico: Rubros (Pie)
+            if (rubrosData && rubrosData.length) {{
+                const rubrosLabels = rubrosData.map(i => i.range);
+                const rubrosValues = rubrosData.map(i => i.total);
+                new Chart(document.getElementById('rubrosChart'), {{
+                    type: 'pie',
+                    data: {{
+                        labels: rubrosLabels,
+                        datasets: [{{
+                            data: rubrosValues,
+                            backgroundColor: rubrosLabels.map(() => getRandomColor()),
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        plugins: {{
+                            legend: {{ position: 'bottom' }},
+                            tooltip: {{
+                                callbacks: {{
+                                    label: function(context) {{
+                                        const label = context.label || '';
+                                        const value = Number(context.raw) || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        return label + ': $' + value.toLocaleString('es-AR') + ' (' + percentage + '%)';
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                }});
+            }}
 
             // Gráfico: Ventas por Caja - Día (Pie) - Solo en reporte diario
             if (!acumuladoMesFlag) {{
