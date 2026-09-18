@@ -75,7 +75,10 @@ def main():
         # 3. Copiar al servidor si existe la ruta de informes
         copied = False
         try:
-            server_path = "/srv/fasa-data/data/informes"
+            # /var/www/html/informes es mount a /srv/fasa-data/data/informes (contenedor); en host usar /srv/...
+            server_path = "/var/www/html/informes"
+            if not os.path.exists(server_path):
+                server_path = "/srv/fasa-data/data/informes"
 
             if os.path.exists(server_path):
                 try:

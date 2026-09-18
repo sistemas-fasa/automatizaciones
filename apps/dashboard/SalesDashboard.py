@@ -582,7 +582,10 @@ class SalesDashboard:
 
                 # Copiar al servidor
                 try:
-                    server_path = "/srv/fasa-data/data/informes"
+                    # /var/www/html/informes es mount a /srv/fasa-data/data/informes (contenedor); en host usar /srv/...
+                    server_path = "/var/www/html/informes"
+                    if not os.path.exists(server_path):
+                        server_path = "/srv/fasa-data/data/informes"
                     if os.path.exists(server_path):
                         dest_file = os.path.join(server_path, inflacion_filename)
                         shutil.copy2(inflacion_filename, dest_file)
@@ -611,7 +614,10 @@ class SalesDashboard:
         
         # Copiar al servidor de informes
         try:
-            server_path = "/srv/fasa-data/data/informes"
+            # /var/www/html/informes es mount a /srv/fasa-data/data/informes (contenedor); en host usar /srv/...
+            server_path = "/var/www/html/informes"
+            if not os.path.exists(server_path):
+                server_path = "/srv/fasa-data/data/informes"
             if os.path.exists(server_path):
                 dest_file = os.path.join(server_path, filename)
                 shutil.copy2(filename, dest_file)
